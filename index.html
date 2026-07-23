@@ -645,6 +645,7 @@ async function run(){
     var wonFromP=createdP.filter(function(d){return STAGE_MAP[d.STAGE_ID]==='Оплата получена';}).length;
     var convP=createdP.length>0?((wonFromP/createdP.length)*100).toFixed(1):'0';
 
+    var SALES_MGR_IDS={'88':true,'200':true,'328':true,'346':true};
     deals.forEach(function(d){
       var raw=d.STAGE_ID||'';
       var label=STAGE_MAP[raw]||(raw.indexOf('WON')!==-1?'Оплата получена':raw.indexOf('LOSE')!==-1?'Условный отказ':'Новый клиент');
@@ -652,8 +653,7 @@ async function run(){
       stageData[label].count++;stageData[label].sum+=parseFloat(d.OPPORTUNITY)||0;
 
       var mgrName=(d.ASSIGNED_BY_ID&&users[d.ASSIGNED_BY_ID])?users[d.ASSIGNED_BY_ID]:'Не назначен';
-      var ALLOWED_UIDS={'88':true,'200':true,'328':true,'346':true};
-      if(mgrName!=='Не назначен'&&ALLOWED_UIDS[d.ASSIGNED_BY_ID]){
+      if(mgrName!=='Не назначен'&&SALES_MGR_IDS[d.ASSIGNED_BY_ID]){
         if(!mgrData[mgrName])mgrData[mgrName]={uid:d.ASSIGNED_BY_ID,total:0,active:0,revM:0,gpM:0,wonM:0,revP:0,gpP:0,wonP:0,avgChkM:0,avgChkMN:0,avgChkP:0,avgChkPN:0,createdM:0,createdP:0,revDay:0,gpDay:0,wonDay:0,actDay:0};
         mgrData[mgrName].total++;
         if(ACTIVE.indexOf(label)!==-1)mgrData[mgrName].active++;
@@ -671,7 +671,7 @@ async function run(){
         var closeDateOnly=d.CLOSEDATE?d.CLOSEDATE.slice(0,10):null;
         var todayLocal=new Date(now.getFullYear(),now.getMonth(),now.getDate());
         var todayOnly=todayLocal.getFullYear()+'-'+String(todayLocal.getMonth()+1).padStart(2,'0')+'-'+String(todayLocal.getDate()).padStart(2,'0');
-        if(!d.UF_CRM_1705997334698&&closeDateOnly===todayOnly&&mgrName!=='Не назначен'){
+        if(!d.UF_CRM_1705997334698&&closeDateOnly===todayOnly&&mgrName!=='Не назначен'&&mgrData[mgrName]){
           mgrData[mgrName].revDay+=opp;mgrData[mgrName].gpDay+=gpv;mgrData[mgrName].wonDay++;
           revDay=(revDay||0)+opp;
         }
@@ -679,14 +679,14 @@ async function run(){
           var todayStart=new Date(now.getFullYear(),now.getMonth(),now.getDate());
           if(payD>=msStart){
             revM+=opp;gpM+=gpv;wonM++;avgChkM+=opp;avgChkMN++;
-            if(mgrName!=='Не назначен'){mgrData[mgrName].revM+=opp;mgrData[mgrName].gpM+=gpv;mgrData[mgrName].wonM++;mgrData[mgrName].avgChkM+=opp;mgrData[mgrName].avgChkMN++;}
+            if(mgrName!=='Не назначен'&&mgrData[mgrName]){mgrData[mgrName].revM+=opp;mgrData[mgrName].gpM+=gpv;mgrData[mgrName].wonM++;mgrData[mgrName].avgChkM+=opp;mgrData[mgrName].avgChkMN++;}
             if(payD>=todayStart){revDay=(revDay||0)+opp;gpDay=(gpDay||0)+gpv;
-              if(mgrName!=='Не назначен'){mgrData[mgrName].revDay+=opp;mgrData[mgrName].gpDay+=gpv;mgrData[mgrName].wonDay++;}}
+              if(mgrName!=='Не назначен'&&mgrData[mgrName]){mgrData[mgrName].revDay+=opp;mgrData[mgrName].gpDay+=gpv;mgrData[mgrName].wonDay++;}}
             recentPaid.push({title:d.TITLE||'(без названия)',amt:opp,gp:gpv,mgr:mgrName,date:payD});
           }
           if(payD>=pmStart&&payD<=pmEnd){
             revP+=opp;gpP+=gpv;avgChkP+=opp;avgChkPN++;
-            if(mgrName!=='Не назначен'){mgrData[mgrName].revP+=opp;mgrData[mgrName].gpP+=gpv;mgrData[mgrName].wonP++;mgrData[mgrName].avgChkP+=opp;mgrData[mgrName].avgChkPN++;}
+            if(mgrName!=='Не назначен'&&mgrData[mgrName]){mgrData[mgrName].revP+=opp;mgrData[mgrName].gpP+=gpv;mgrData[mgrName].wonP++;mgrData[mgrName].avgChkP+=opp;mgrData[mgrName].avgChkPN++;}
           }
         }
       }
@@ -771,8 +771,7 @@ async function run(){
     document.getElementById('planStrip').innerHTML=tpc('Вал. прибыль','gp',gpM,planGp,fmt,'₸',true)+tpc('Конверсия','conv',parseFloat(convM),planConv,null,'%')+tpc('Средний чек','avg',avgM,planAvg,fmt,'₸');
 
     /* MANAGER CARDS */
-    var ACTIVE_MGR_IDS={'88':true,'200':true,'328':true,'346':true};
-    var mgrArr=Object.entries(mgrData).filter(function(x){return ACTIVE_MGR_IDS[x[1].uid];}).sort(function(a,b){return b[1].gpM-a[1].gpM;}).slice(0,4);
+    var mgrArr=Object.entries(mgrData).filter(function(x){return SALES_MGR_IDS[x[1].uid];}).sort(function(a,b){return b[1].gpM-a[1].gpM;}).slice(0,4);
     var topUid=mgrArr.length?mgrArr[0][1].uid:null;
     document.getElementById('mgrRow').innerHTML=mgrArr.map(function(x,i){
       var m=x[1];
@@ -851,8 +850,6 @@ async function run(){
     '</div>';
 
     /* HEATMAP */
-    // Менеджеры воронки: Азат (88), Мади (124), Кирилл (200)
-    var SALES_MGR_IDS={'88':true,'200':true,'328':true,'346':true};
     var mgrUserIds=SALES_MGR_IDS;
     var heatHtml=buildHeatmap(activities, mgrUserIds);
     document.getElementById('heatBody').innerHTML=heatHtml;
@@ -882,7 +879,7 @@ async function run(){
 
     /* TOURNAMENT — ЛИДЕР ДНЯ */
     // Сортируем по выручке за сегодня. Если у всех 0 — показываем по активным сделкам
-    var tArr=Object.entries(mgrData).filter(function(x){return x[0]!=='Не назначен' && ACTIVE_MGR_IDS[x[1].uid];});
+    var tArr=Object.entries(mgrData).filter(function(x){return x[0]!=='Не назначен' && SALES_MGR_IDS[x[1].uid];});
     var hasPayToday=tArr.some(function(x){return x[1].revDay>0;});
     var hasActToday=tArr.some(function(x){return (x[1].actDay||0)>0;});
     var tArrSorted=tArr.slice().sort(function(a,b){
