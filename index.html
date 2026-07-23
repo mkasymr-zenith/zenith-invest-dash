@@ -181,7 +181,7 @@ body.light .panel {
 /* ─ MANAGER CARDS (top row, span all 3) ─ */
 .mgr-row {
   grid-column:1/-1;
-  display:grid; grid-template-columns:repeat(3,1fr);
+  display:grid; grid-template-columns:repeat(4,1fr);
   gap:8px;
 }
 .mc {
@@ -198,8 +198,8 @@ body.light .mc {
   box-shadow:0 1px 4px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(255,255,255,0.05);
 }
 .mc-h {
-  padding:9px 12px 8px; border-bottom:1px solid var(--line);
-  display:flex; align-items:center; gap:10px; flex-shrink:0;
+  padding:7px 10px 7px; border-bottom:1px solid var(--line);
+  display:flex; align-items:center; gap:8px; flex-shrink:0;
 }
 .mc-av {
   width:36px; height:36px; border-radius:50%;
@@ -208,21 +208,21 @@ body.light .mc {
   position:relative;
 }
 .crown { position:absolute; top:-10px; left:50%; transform:translateX(-50%); font-size:14px; }
-.mc-nm { font-size:14px; font-weight:700; font-family:'Montserrat',sans-serif; letter-spacing:.01em; }
+.mc-nm { font-size:13px; font-weight:700; font-family:'Montserrat',sans-serif; letter-spacing:.01em; }
 .mc-mt { font-size:9px; color:var(--text2); margin-top:1px; }
 .mc-kpi { display:grid; grid-template-columns:repeat(3,1fr); border-bottom:1px solid var(--line); flex-shrink:0; }
-.kpi { padding:7px 10px; border-right:1px solid var(--line); display:flex; flex-direction:column; gap:1px; }
+.kpi { padding:6px 8px; border-right:1px solid var(--line); display:flex; flex-direction:column; gap:1px; }
 .kpi:last-child{border-right:none;}
 .kpi-l{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;}
-.kpi-v{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1;letter-spacing:-.1px;font-family:'Montserrat',sans-serif;}
+.kpi-v{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1;letter-spacing:-.1px;font-family:'Montserrat',sans-serif;}
 .kpi-d{font-size:9px;font-weight:600;}
-.mc-pl { padding:7px 10px; flex:1; display:flex; flex-direction:column; gap:5px; overflow:hidden; }
+.mc-pl { padding:5px 8px; flex:1; display:flex; flex-direction:column; gap:4px; overflow:hidden; }
 .mpl { display:flex; align-items:center; gap:6px; }
 .mpl-n { font-size:9px; color:var(--text2); min-width:60px; }
 .mpl-bg { flex:1; background:var(--card2); border-radius:3px; height:4px; overflow:hidden; }
 .mpl-f  { height:4px; border-radius:3px; transition:width .9s cubic-bezier(.4,0,.2,1); }
 .mpl-v  { font-size:10px; font-weight:700; min-width:32px; text-align:right; }
-.mc-inp-row { display:grid; grid-template-columns:repeat(3,1fr); gap:4px; padding:6px 10px; border-top:1px solid var(--line); flex-shrink:0; }
+.mc-inp-row { display:grid; grid-template-columns:repeat(3,1fr); gap:3px; padding:5px 8px; border-top:1px solid var(--line); flex-shrink:0; }
 .inp-wrap label{font-size:8px;color:var(--text3);display:block;margin-bottom:2px;}
 .inp-wrap input{
   width:100%;background:var(--card2);
@@ -770,7 +770,8 @@ async function run(){
     document.getElementById('planStrip').innerHTML=tpc('Вал. прибыль','gp',gpM,planGp,fmt,'₸',true)+tpc('Конверсия','conv',parseFloat(convM),planConv,null,'%')+tpc('Средний чек','avg',avgM,planAvg,fmt,'₸');
 
     /* MANAGER CARDS */
-    var mgrArr=Object.entries(mgrData).sort(function(a,b){return b[1].gpM-a[1].gpM;}).slice(0,3);
+    var ACTIVE_MGR_IDS={'88':true,'200':true,'328':true,'346':true};
+    var mgrArr=Object.entries(mgrData).filter(function(x){return ACTIVE_MGR_IDS[x[1].uid];}).sort(function(a,b){return b[1].gpM-a[1].gpM;}).slice(0,4);
     var topUid=mgrArr.length?mgrArr[0][1].uid:null;
     document.getElementById('mgrRow').innerHTML=mgrArr.map(function(x,i){
       var m=x[1];
@@ -850,7 +851,7 @@ async function run(){
 
     /* HEATMAP */
     // Менеджеры воронки: Азат (88), Мади (124), Кирилл (200)
-    var SALES_MGR_IDS={'88':true,'124':true,'200':true};
+    var SALES_MGR_IDS={'88':true,'200':true,'328':true,'346':true};
     var mgrUserIds=SALES_MGR_IDS;
     var heatHtml=buildHeatmap(activities, mgrUserIds);
     document.getElementById('heatBody').innerHTML=heatHtml;
@@ -880,7 +881,7 @@ async function run(){
 
     /* TOURNAMENT — ЛИДЕР ДНЯ */
     // Сортируем по выручке за сегодня. Если у всех 0 — показываем по активным сделкам
-    var tArr=Object.entries(mgrData).filter(function(x){return x[0]!=='Не назначен';});
+    var tArr=Object.entries(mgrData).filter(function(x){return x[0]!=='Не назначен' && ACTIVE_MGR_IDS[x[1].uid];});
     var hasPayToday=tArr.some(function(x){return x[1].revDay>0;});
     var hasActToday=tArr.some(function(x){return (x[1].actDay||0)>0;});
     var tArrSorted=tArr.slice().sort(function(a,b){
@@ -999,7 +1000,7 @@ function setMood(val){
     if(params.get('avg'))   plan.planAvg   = parseFloat(params.get('avg'));
     // Планы менеджеров: m88gp, m88conv, m88avg, m124gp...
     if(!plan.mgrs) plan.mgrs={};
-    ['88','124','200'].forEach(function(uid){
+    ['88','200','328','346'].forEach(function(uid){
       if(params.get('m'+uid+'gp'))   plan.mgrs[uid+':gp']   = parseFloat(params.get('m'+uid+'gp'));
       if(params.get('m'+uid+'conv')) plan.mgrs[uid+':conv'] = parseFloat(params.get('m'+uid+'conv'));
       if(params.get('m'+uid+'avg'))  plan.mgrs[uid+':avg']  = parseFloat(params.get('m'+uid+'avg'));
