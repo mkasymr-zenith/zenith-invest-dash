@@ -652,7 +652,8 @@ async function run(){
       stageData[label].count++;stageData[label].sum+=parseFloat(d.OPPORTUNITY)||0;
 
       var mgrName=(d.ASSIGNED_BY_ID&&users[d.ASSIGNED_BY_ID])?users[d.ASSIGNED_BY_ID]:'Не назначен';
-      if(mgrName!=='Не назначен'){
+      var ALLOWED_UIDS={'88':true,'200':true,'328':true,'346':true};
+      if(mgrName!=='Не назначен'&&ALLOWED_UIDS[d.ASSIGNED_BY_ID]){
         if(!mgrData[mgrName])mgrData[mgrName]={uid:d.ASSIGNED_BY_ID,total:0,active:0,revM:0,gpM:0,wonM:0,revP:0,gpP:0,wonP:0,avgChkM:0,avgChkMN:0,avgChkP:0,avgChkPN:0,createdM:0,createdP:0,revDay:0,gpDay:0,wonDay:0,actDay:0};
         mgrData[mgrName].total++;
         if(ACTIVE.indexOf(label)!==-1)mgrData[mgrName].active++;
