@@ -1005,7 +1005,7 @@ function setMood(val){
     if(params.get('avg'))   plan.planAvg   = parseFloat(params.get('avg'));
     // Планы менеджеров: m88gp, m88conv, m88avg, m124gp...
     if(!plan.mgrs) plan.mgrs={};
-    ['88','200','328','346'].forEach(function(uid){
+    ['88','124','200','328','346'].forEach(function(uid){
       if(params.get('m'+uid+'gp'))   plan.mgrs[uid+':gp']   = parseFloat(params.get('m'+uid+'gp'));
       if(params.get('m'+uid+'conv')) plan.mgrs[uid+':conv'] = parseFloat(params.get('m'+uid+'conv'));
       if(params.get('m'+uid+'avg'))  plan.mgrs[uid+':avg']  = parseFloat(params.get('m'+uid+'avg'));
