@@ -294,6 +294,15 @@ body.light .mc {
   padding:0 20px; font-size:9px; color:var(--text3);
   border-top:1px solid var(--line); background:var(--bg2);
 }
+.leaf {
+  position:fixed; top:-60px; animation:fall linear forwards;
+  pointer-events:none; z-index:9999; user-select:none;
+}
+@keyframes fall {
+  0%   { transform:translateY(0) rotate(0deg); opacity:1; }
+  85%  { opacity:0.8; }
+  100% { transform:translateY(105vh) rotate(540deg); opacity:0; }
+}
 </style>
 </head>
 <body>
@@ -318,6 +327,7 @@ body.light .mc {
     <div class="status"><span class="dot loading" id="dot"></span><span id="stText">Загрузка...</span></div>
     <button class="tbtn" id="copyPlanBtn" onclick="copyPlanUrl()" style="font-size:11px;padding:5px 10px">🔗 Копировать ссылку</button>
     <button class="tbtn" id="themeBtn" onclick="toggleTheme()">☀</button>
+    <button class="tbtn" id="leafBtn" onclick="toggleLeaves()" title="Осенний вайб">🍂</button>
     <div class="clock" id="clock">00:00:00</div>
   </div>
 </div>
@@ -376,11 +386,11 @@ body.light .mc {
 <script>
 var WH='https://macron.bitrix24.kz/rest/88/ozk5j3nkr24pilf1/';
 var PLAN_KEY='macron_dashboard_plan_v2';
-var STAGE_MAP={'C14:NEW':'Новый клиент','C14:PREPARATION':'Взят в работу','C14:EXECUTING':'КП презентовано','C14:FINAL_INVOICE':'КП согласовано','C14:UC_O6LFBY':'Счёт выставлен','C14:WON':'Оплата получена','C14:LOSE':'Условный отказ'};
+var STAGE_MAP={'C14:NEW':'Новый клиент','C14:PREPARATION':'Взят в работу','C14:EXECUTING':'КП презентовано','C14:UC_TONIVQ':'КЭВ','C14:FINAL_INVOICE':'КП согласовано','C14:UC_O6LFBY':'Счёт выставлен','C14:WON':'Оплата получена','C14:LOSE':'Условный отказ'};
 var REFUSE_MAP={'332':'Не прошли по цене','334':'Нет в наличии','336':'Срок поставки','338':'Мы отказали','340':'Отмена закупа','342':'Нет документов','344':'Условия оплаты','346':'Качество','348':'Нет товара','350':'Другое','352':'Не отвечает','354':'Уже купили','356':'На прогрев'};
-var ACTIVE=['Новый клиент','Взят в работу','КП презентовано','КП согласовано','Счёт выставлен'];
+var ACTIVE=['Новый клиент','Взят в работу','КП презентовано','КЭВ','КП согласовано','Счёт выставлен'];
 var ALL_ST=ACTIVE.concat(['Условный отказ','Оплата получена']);
-var ST_COLOR={'Новый клиент':'#ff9f0a','Взят в работу':'#0a84ff','КП презентовано':'#40c8e0','КП согласовано':'#30d158','Счёт выставлен':'#bf5af2','Оплата получена':'#30d158','Условный отказ':'#ff3b30'};
+var ST_COLOR={'Новый клиент':'#ff9f0a','Взят в работу':'#0a84ff','КП презентовано':'#40c8e0','КЭВ':'#9b76cc','КП согласовано':'#30d158','Счёт выставлен':'#bf5af2','Оплата получена':'#30d158','Условный отказ':'#ff3b30'};
 var AV_BG=['#c0392b','#2471a3','#1e8449','#7d3c98','#b9770e','#148f77'];
 
 /* THEME */
@@ -1037,6 +1047,78 @@ function copyPlanUrl(){
     prompt('Скопируй ссылку:', url);
   });
 }
+
+/* 🍂 ЛИСТЬЯ */
+var leavesActive = localStorage.getItem('zi_leaves') === 'on';
+var leafInterval = null;
+var LEAF_EMOJIS = ['🍂','🍁','🍃','🌿','🍂','🍁'];
+
+function createLeaf(){
+  var leaf = document.createElement('div');
+  leaf.className = 'leaf';
+  leaf.textContent = LEAF_EMOJIS[Math.floor(Math.random()*LEAF_EMOJIS.length)];
+  var startX = Math.random() * window.innerWidth;
+  var duration = 4 + Math.random() * 8;
+  var size = 14 + Math.random() * 18;
+  var swayAmt = 40 + Math.random() * 80;
+  leaf.style.left = startX + 'px';
+  leaf.style.fontSize = size + 'px';
+  leaf.style.animationDuration = duration + 's';
+  leaf.style.animationDelay = (Math.random() * -2) + 's';
+  // Случайное покачивание через CSS переменную
+  leaf.style.setProperty('--sway', swayAmt + 'px');
+  // Добавляем горизонтальное покачивание через JS
+  var swayDir = Math.random() > 0.5 ? 1 : -1;
+  leaf.style.animation = 'fall ' + duration + 's linear forwards';
+  document.body.appendChild(leaf);
+  // Покачивание горизонтальное
+  var startLeft = startX;
+  var swayStep = 0;
+  var swayInterval = setInterval(function(){
+    swayStep += 0.05;
+    leaf.style.left = (startLeft + Math.sin(swayStep) * swayAmt * swayDir) + 'px';
+  }, 50);
+  setTimeout(function(){
+    clearInterval(swayInterval);
+    if(leaf.parentNode) leaf.parentNode.removeChild(leaf);
+  }, duration * 1000);
+}
+
+function startLeaves(){
+  createLeaf();
+  leafInterval = setInterval(function(){
+    for(var i=0;i<2;i++) createLeaf();
+  }, 600);
+}
+
+function stopLeaves(){
+  if(leafInterval){ clearInterval(leafInterval); leafInterval=null; }
+  document.querySelectorAll('.leaf').forEach(function(l){ l.parentNode && l.parentNode.removeChild(l); });
+}
+
+function toggleLeaves(){
+  leavesActive = !leavesActive;
+  localStorage.setItem('zi_leaves', leavesActive ? 'on' : 'off');
+  var btn = document.getElementById('leafBtn');
+  if(leavesActive){
+    startLeaves();
+    if(btn) btn.style.opacity='1';
+  } else {
+    stopLeaves();
+    if(btn) btn.style.opacity='0.4';
+  }
+}
+
+// Восстанавливаем состояние
+(function(){
+  var btn = document.getElementById('leafBtn');
+  if(leavesActive){
+    startLeaves();
+    if(btn) btn.style.opacity='1';
+  } else {
+    if(btn) btn.style.opacity='0.4';
+  }
+})();
 
 run();
 setInterval(run,2*60*1000);
