@@ -91,7 +91,8 @@
     build();busy=true;ctx=ctx||{};
     var big=ctx.avgM>0&&it.amt>=ctx.avgM*2;
     ov.classList.toggle('big',big);
-    els.av.textContent=initials(it.mgr).toUpperCase();
+    els.av.textContent=it.avatar||initials(it.mgr).toUpperCase();
+    els.kick.textContent=it.demo?'Тестовый показ: так будет выглядеть новая оплата':'Оплата получена 🎉';
     els.name.textContent=it.mgr||'Команда';
     els.title.textContent=it.title||'';
     els.gp.textContent=it.gp>0?'Валовая прибыль '+short(it.gp)+' ₸':'';
@@ -111,9 +112,10 @@
     }else els.plan.style.display='none';
 
     ov.classList.remove('on');void ov.offsetWidth;ov.classList.add('on');
-    countUp(els.amt,it.amt||0,reduceMotion?0:1600);
+    var countMs=big?2600:1600;
+    countUp(els.amt,it.amt||0,reduceMotion?0:countMs);
     if(!reduceMotion)confetti(els.cv,big);
-    if(soundOn())fanfare(big);
+    if(soundOn())playMoney(big,countMs);
     clearTimeout(hideT);hideT=setTimeout(hide,SHOW_MS+(big?3000:0));
   }
   function hide(){
@@ -180,20 +182,73 @@
   }
   // Браузеры разрешают звук только после первого клика/нажатия на странице
   ['pointerdown','keydown','touchstart'].forEach(function(ev){document.addEventListener(ev,function(){audio();},{once:true,passive:true});});
-  function tone(a,f,s,d,type,vol){
+  /* Звук «машинка считает деньги»: шелест купюр с мотором, пока сумма набегает,
+     затем «ка-чинг» кассы, звон монет и короткий аккорд. Всё синтезируется на лету. */
+  function out(a){
+    if(a._zcOut)return a._zcOut;
+    var c=a.createDynamicsCompressor();c.threshold.value=-16;c.ratio.value=4;
+    var g=a.createGain();g.gain.value=1.6;c.connect(g);g.connect(a.destination);
+    return a._zcOut=c;
+  }
+  function noiseBuf(a){
+    if(a._zcNoise)return a._zcNoise;
+    var b=a.createBuffer(1,a.sampleRate,a.sampleRate),d=b.getChannelData(0);
+    for(var i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+    return a._zcNoise=b;
+  }
+  function burst(a,t,dur,type,freq,q,vol){
+    var s=a.createBufferSource(),f=a.createBiquadFilter(),g=a.createGain();
+    s.buffer=noiseBuf(a);f.type=type;f.frequency.value=freq;f.Q.value=q;
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.002);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+    s.connect(f);f.connect(g);g.connect(out(a));s.start(t,Math.random()*.8,dur+.03);
+  }
+  function osc(a,f,t,dur,type,vol,att){
     var o=a.createOscillator(),g=a.createGain();o.type=type;o.frequency.value=f;
-    g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(vol,s+.02);g.gain.exponentialRampToValueAtTime(.0001,s+d);
-    o.connect(g);g.connect(a.destination);o.start(s);o.stop(s+d+.05);
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+(att||.004));g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+    o.connect(g);g.connect(out(a));o.start(t);o.stop(t+dur+.05);
   }
-  function fanfare(big){
-    var a=audio();if(!a)return;var t=a.currentTime+.05;
-    [[523.25,0,.14],[659.25,.13,.14],[783.99,.26,.14],[1046.5,.39,.6]].forEach(function(n){tone(a,n[0],t+n[1],n[2],'triangle',.28);});
-    tone(a,1975.5,t+.42,.5,'sine',.16);tone(a,2637,t+.52,.8,'sine',.12);
-    [523.25,659.25,783.99,1046.5].forEach(function(f){tone(a,f,t+1,1.4,'sawtooth',.05);});
-    if(big){[[783.99,1.9,.14],[1046.5,2.03,.14],[1318.5,2.16,.9]].forEach(function(n){tone(a,n[0],t+n[1],n[2],'triangle',.26);});
-      [659.25,783.99,1046.5,1318.5].forEach(function(f){tone(a,f,t+2.2,1.8,'sawtooth',.05);});}
+  function billCounter(a,t,ms){
+    var dur=ms/1000;
+    // гул мотора
+    var o=a.createOscillator(),lp=a.createBiquadFilter(),g=a.createGain();
+    o.type='sawtooth';o.frequency.setValueAtTime(60,t);o.frequency.linearRampToValueAtTime(92,t+.3);
+    lp.type='lowpass';lp.frequency.value=380;
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.06,t+.15);g.gain.setValueAtTime(.06,t+dur-.08);g.gain.linearRampToValueAtTime(0,t+dur+.06);
+    o.connect(lp);lp.connect(g);g.connect(out(a));o.start(t);o.stop(t+dur+.1);
+    // шелест купюр: разгоняется до ~30 щелчков в секунду
+    for(var x=t;x<t+dur;){
+      var p=(x-t)/dur,rate=14+16*Math.min(1,p*3);
+      burst(a,x,.022,'bandpass',2600+Math.random()*2000,1.1,.32+Math.random()*.12);
+      burst(a,x,.03,'lowpass',520,.7,.14);
+      x+=(1/rate)*(.85+Math.random()*.3);
+    }
   }
-  function ding(){var a=audio();if(!a)return;var t=a.currentTime+.03;tone(a,1975.5,t,.4,'sine',.18);tone(a,2637,t+.09,.6,'sine',.14);}
+  function kaching(a,t,vol){
+    vol=vol||1;
+    burst(a,t,.09,'lowpass',850,.8,.55*vol);          // «ка» — удар ящика кассы
+    burst(a,t+.01,.05,'bandpass',3200,2,.22*vol);
+    [[1568,1.5],[2349,1.2],[3136,.9],[4699,.6]].forEach(function(n,i){  // «чинг» — колокольчик
+      osc(a,n[0],t+.06,n[1],'sine',.2*vol/(i+1));osc(a,n[0]*1.004,t+.06,n[1],'sine',.05*vol);
+    });
+    [2093,2793,4186].forEach(function(f,i){osc(a,f,t+.18,1.3-i*.25,'sine',.1*vol);});
+  }
+  function coins(a,t,n){
+    for(var i=0;i<n;i++){var s=t+Math.random()*.75,f=3000+Math.random()*3800;
+      osc(a,f,s,.1+Math.random()*.18,'sine',.05);osc(a,f*1.51,s,.07,'sine',.02);}
+  }
+  function chord(a,t,big){
+    [523.25,659.25,783.99,1046.5].forEach(function(f){osc(a,f,t,big?2.4:1.5,'triangle',.06,.03);});
+    if(big)[[783.99,0],[1046.5,.13],[1318.5,.26]].forEach(function(n){osc(a,n[0],t+.55+n[1],n[1]===.26?1.2:.4,'triangle',.13);});
+  }
+  // t — когда открылся экран; сумма начинает набегать через 0,45 с и идёт countMs
+  function moneySound(a,t,countMs,big){
+    billCounter(a,t+.45,countMs);
+    var end=t+.45+countMs/1000;
+    kaching(a,end,1);coins(a,end+.12,big?30:16);chord(a,end+.4,big);
+    if(big){kaching(a,end+1,.8);coins(a,end+1.1,24);}
+  }
+  function playMoney(big,countMs){var a=audio();if(a)moneySound(a,a.currentTime+.02,countMs,big);}
+  function ding(){var a=audio();if(!a)return;var t=a.currentTime+.03;kaching(a,t,.6);coins(a,t+.1,6);}
 
   function soundOn(){try{return localStorage.getItem('zi_sound')!=='off';}catch(e){return true;}}
 
@@ -219,6 +274,7 @@
     },
     demo:function(it,ctx){queue.push({it:it,ctx:ctx,mode:'full'});next();},
     toast:toast,
+    _render:function(big){var ms=big?2600:1600,sec=.5+ms/1000+3.6,oc=new OfflineAudioContext(2,Math.ceil(44100*sec),44100);moneySound(oc,.05,ms,big);return oc.startRendering();},
     soundOn:soundOn,
     toggleSound:function(){var on=!soundOn();try{localStorage.setItem('zi_sound',on?'on':'off');}catch(e){}if(on)ding();return on;}
   };

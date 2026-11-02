@@ -24,6 +24,40 @@ var SALES_MGRS=[
 ];
 var SALES_MGR_IDS={};SALES_MGRS.forEach(function(m){SALES_MGR_IDS[m.uid]=true;});
 
+
+/* ─ Праздники Казахстана ─
+   fixed: [месяц-день, переносится ли]. Если переносимый праздник выпал на субботу или
+   воскресенье, выходным становится следующий рабочий день (так считает Трудовой кодекс РК).
+   Рождество и Курбан айт не переносятся.
+   ★ Раз в год сверяй с производственным календарём:
+     religious — первый день Курбан айта (дату объявляет ДУМК),
+     extraOff  — дополнительные выходные по постановлению правительства,
+     extraWork — рабочие субботы/воскресенья по постановлению. */
+var KZ_HOLIDAYS={
+  fixed:[['01-01',1],['01-02',1],['01-07',0],['03-08',1],['03-21',1],['03-22',1],['03-23',1],
+         ['05-01',1],['05-07',1],['05-09',1],['07-06',1],['08-30',1],['10-25',1],['12-16',1]],
+  religious:{'2026':['05-27'],'2027':['05-16']},
+  extraOff:{},
+  extraWork:{}
+};
+var _kzOff={};
+function kzOffDays(y){
+  if(_kzOff[y])return _kzOff[y];
+  var off={},moves=[];
+  function key(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+  function at(md){var p=md.split('-');return new Date(y,+p[0]-1,+p[1]);}
+  KZ_HOLIDAYS.fixed.forEach(function(h){var d=at(h[0]);off[key(d)]=1;if(h[1]&&(d.getDay()===0||d.getDay()===6))moves.push(d);});
+  (KZ_HOLIDAYS.religious[y]||[]).forEach(function(md){off[key(at(md))]=1;});
+  moves.sort(function(a,b){return a-b;}).forEach(function(d){
+    var n=new Date(d);
+    do{n.setDate(n.getDate()+1);}while(n.getDay()===0||n.getDay()===6||off[key(n)]);
+    off[key(n)]=1;
+  });
+  (KZ_HOLIDAYS.extraOff[y]||[]).forEach(function(md){off[key(at(md))]=1;});
+  var work={};(KZ_HOLIDAYS.extraWork[y]||[]).forEach(function(md){work[key(at(md))]=1;});
+  return _kzOff[y]={off:off,work:work};
+}
+
 /* ─ Загрузка ─ */
 async function fetchDeals(){
   var all=[],start=0,total=null;
@@ -96,12 +130,18 @@ var Z={
   },
   dealUrl:function(id){return PORTAL+'/crm/deal/details/'+id+'/';},
   dayKey:function(dt){return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');},
-  // Рабочие дни (пн–пт) месяца: всего, прошло включая сегодня, осталось включая сегодня
+  // Рабочий ли день с учётом праздников и переносов Казахстана
+  isWorkday:function(d){
+    var c=kzOffDays(d.getFullYear()),k=Z.dayKey(d);
+    if(c.work[k])return true;
+    if(c.off[k])return false;
+    return d.getDay()!==0&&d.getDay()!==6;
+  },
+  // Рабочие дни месяца: всего, прошло (до сегодня), осталось (включая сегодня)
   workdays:function(now){
     var y=now.getFullYear(),m=now.getMonth(),last=new Date(y,m+1,0).getDate(),total=0,passed=0,left=0;
     for(var i=1;i<=last;i++){
-      var dow=new Date(y,m,i).getDay();
-      if(dow===0||dow===6)continue;
+      if(!Z.isWorkday(new Date(y,m,i)))continue;
       total++; if(i<now.getDate())passed++; else left++;
     }
     return {total:total,passed:passed,left:left};

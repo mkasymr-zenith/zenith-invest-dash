@@ -124,6 +124,7 @@ button,select{font:inherit;color:inherit}
 .bar b{font-size:10px;font-weight:700;color:var(--text2)}
 .bar span{font-size:10px;color:var(--text3)}
 .bar.t span,.bar.t b{color:var(--red)}
+.bar.off span{opacity:.45}
 
 /* оплаты */
 .pay{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
@@ -200,8 +201,8 @@ button,select{font:inherit;color:inherit}
   </div>
 </main>
 
-<script src="zenith-core.js?v=3"></script>
-<script src="celebrate.js?v=3"></script>
+<script src="zenith-core.js?v=6"></script>
+<script src="celebrate.js?v=6"></script>
 <script>
 var esc=Z.esc;
 function fmt(n){n=parseFloat(n)||0;var a=Math.abs(n);if(a>=1e9)return(n/1e9).toFixed(1)+' млрд';if(a>=1e6)return(n/1e6).toFixed(1)+' млн';if(a>=1e3)return Math.round(n/1e3)+' тыс';return String(Math.round(n));}
@@ -416,9 +417,12 @@ function render(){
   acts.forEach(function(a){if(String(a.AUTHOR_ID)===uid&&a.CREATED&&idx[a.CREATED.slice(0,10)])idx[a.CREATED.slice(0,10)].v++;});
   var mx=Math.max.apply(null,cells.map(function(c){return c.v;}).concat([1])),tot=cells.reduce(function(s,c){return s+c.v;},0);
   var dn=['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
-  document.getElementById('callsTotal').textContent=tot+' · в среднем '+Math.round(tot/10)+' за рабочий день';
+  var wdc=cells.filter(function(c,i){return i<13&&Z.isWorkday(c.d);}).length||1; // без сегодняшнего неполного дня
+  var tot13=cells.slice(0,13).reduce(function(s,c){return s+c.v;},0);
+  document.getElementById('callsTotal').textContent=tot+' · в среднем '+Math.round(tot13/wdc)+' за рабочий день';
   document.getElementById('callBars').innerHTML='<div class="bars">'+cells.map(function(c,i){
-    return '<div class="bar'+(i===13?' t':'')+'" title="'+c.d.toLocaleDateString('ru-RU')+': '+c.v+'"><b>'+(c.v||'')+'</b><i style="height:'+Math.max(3,Math.round(c.v/mx*80))+'px"></i><span>'+dn[c.d.getDay()]+'</span></div>';
+    var off=!Z.isWorkday(c.d);
+    return '<div class="bar'+(i===13?' t':'')+(off?' off':'')+'" title="'+c.d.toLocaleDateString('ru-RU')+(off?' (выходной)':'')+': '+c.v+'"><b>'+(c.v||'')+'</b><i style="height:'+Math.max(3,Math.round(c.v/mx*80))+'px"></i><span>'+dn[c.d.getDay()]+'</span></div>';
   }).join('')+'</div>';
 
   /* ─ празднование ─ */

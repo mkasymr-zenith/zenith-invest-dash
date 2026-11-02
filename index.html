@@ -61,7 +61,7 @@ a{color:inherit;text-decoration:none}
 /* ─ сетка ─ */
 .grid{flex:1;min-height:0;display:grid;gap:.85rem;padding:0 1.4rem 1.2rem;
   grid-template-columns:repeat(12,minmax(0,1fr));
-  grid-template-rows:auto minmax(0,1.1fr) minmax(0,1fr)}
+  grid-template-rows:auto auto minmax(0,1fr)} /* команда всегда целиком, сжимаются нижние панели */
 .card{background:var(--card);border-radius:1rem;box-shadow:var(--shadow);min-height:0;overflow:hidden;display:flex;flex-direction:column}
 .ch{display:flex;justify-content:space-between;align-items:baseline;gap:.8rem;padding:.85rem 1.1rem .35rem}
 .ch h2{font-family:Montserrat,sans-serif;font-weight:800;font-size:1.02rem}
@@ -119,7 +119,7 @@ a{color:inherit;text-decoration:none}
 .td .tpay{font-family:Montserrat,sans-serif;font-weight:800;color:var(--green)}
 
 /* ─ звонки ─ */
-.calls{grid-column:span 4}
+.calls{grid-column:span 4;min-height:16rem}
 .calls-top{display:flex;align-items:baseline;gap:.6rem;padding:0 1.1rem}
 .calls-top .n{font-weight:900;font-size:2.6rem}
 .calls-top span{color:var(--text2);font-size:.9rem}
