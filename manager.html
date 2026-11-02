@@ -201,8 +201,8 @@ button,select{font:inherit;color:inherit}
   </div>
 </main>
 
-<script src="zenith-core.js?v=6"></script>
-<script src="celebrate.js?v=6"></script>
+<script src="zenith-core.js?v=11"></script>
+<script src="celebrate.js?v=11"></script>
 <script>
 var esc=Z.esc;
 function fmt(n){n=parseFloat(n)||0;var a=Math.abs(n);if(a>=1e9)return(n/1e9).toFixed(1)+' млрд';if(a>=1e6)return(n/1e6).toFixed(1)+' млн';if(a>=1e3)return Math.round(n/1e3)+' тыс';return String(Math.round(n));}
@@ -234,9 +234,12 @@ var DATA=null;
 async function load(){
   var dot=document.getElementById('dot'),st=document.getElementById('stText');
   dot.className='dot loading';st.textContent='Обновление…';
+  if(!DATA){
+    var c=cachedAll();
+    if(c){DATA=c;try{render();}catch(e){console.warn(e);}st.textContent='Данные от '+new Date(c.at).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})+', обновляем…';}
+  }
   try{
-    var res=await Promise.all([fetchDeals(),fetchUsers(),fetchActivities()]);
-    DATA={deals:res[0],users:res[1],acts:res[2]};
+    DATA=await loadAll();
     document.getElementById('err').style.display='none';
     render();
     dot.className='dot';
@@ -311,7 +314,8 @@ function render(){
   });
 
   var avgM=my.wonM?my.revM/my.wonM:0,avgPS=my.wonPS?my.revPS/my.wonPS:0;
-  var convM=my.createdM?my.wonFromCreatedM/my.createdM*100:0,convPS=my.createdPS?my.wonFromCreatedPS/my.createdPS*100:0;
+  // Конверсия = продажи за месяц ÷ новые сделки (квал-лиды) за месяц
+  var convM=my.createdM?my.wonM/my.createdM*100:0,convPS=my.createdPS?my.wonPS/my.createdPS*100:0;
 
   /* ─ главный блок ─ */
   var h=now.getHours(),greet=h<12?'Доброе утро':h<18?'Добрый день':'Добрый вечер';

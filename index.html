@@ -107,7 +107,7 @@ a{color:inherit;text-decoration:none}
 
 /* ─ команда ─ */
 .board{grid-column:span 8}
-.row{display:grid;grid-template-columns:1.6rem 2.6rem minmax(8rem,1.15fr) minmax(12rem,2.2fr) 5.2rem 6.2rem 9.5rem;align-items:center;gap:.8rem;padding:.5rem 0;border-bottom:1px solid var(--line)}
+.row{display:grid;grid-template-columns:1.6rem 2.6rem minmax(8rem,1.15fr) minmax(12rem,2.2fr) 7.2rem 6.2rem 9.5rem;align-items:center;gap:.8rem;padding:.5rem 0;border-bottom:1px solid var(--line)}
 .row:last-child{border-bottom:none}
 .row.head{padding:.1rem 0 .35rem;font-size:.76rem;color:var(--text3)}
 .rk{font-family:Montserrat,sans-serif;font-weight:800;color:var(--text3);text-align:center;font-size:1rem}
@@ -159,7 +159,7 @@ a{color:inherit;text-decoration:none}
 
 /* ─ окно планов ─ */
 dialog{margin:auto;border:none;border-radius:1rem;background:var(--card);color:var(--text);box-shadow:0 20px 60px rgba(0,0,0,.5);
-  width:min(46rem,94vw);max-height:90vh;padding:0}
+  width:min(60rem,96vw);max-height:90vh;padding:0}
 dialog::backdrop{background:rgba(0,0,0,.55)}
 .dlg-h{padding:1.2rem 1.4rem .4rem}
 .dlg-h h2{font-family:Montserrat,sans-serif;font-weight:800;font-size:1.3rem}
@@ -176,6 +176,14 @@ dialog::backdrop{background:rgba(0,0,0,.55)}
 .dlg-f div{display:flex;gap:.6rem}
 .btn.primary{background:var(--red);color:#fff}
 .btn.ghost{box-shadow:none}
+.btn.lnk{font-size:.82rem;padding:.4rem .6rem;color:var(--red)}
+.btn.warn{background:var(--amber-d);color:var(--amber);box-shadow:none}
+.dlg-note{font-size:.85rem;color:var(--text2);align-self:center}
+.steps{padding:.4rem 1.4rem .2rem;display:flex;flex-direction:column;gap:1rem}
+.step{display:flex;gap:.9rem;font-size:.95rem;line-height:1.5}
+.step>b{flex-shrink:0;width:1.8rem;height:1.8rem;border-radius:50%;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-family:Montserrat,sans-serif}
+.step code{background:var(--card2);padding:.1rem .35rem;border-radius:.3rem;font-size:.88em}
+.step .btn{margin-top:.3rem}
 
 /* ─ листья ─ */
 .leaf{position:fixed;top:-60px;animation:fall linear forwards;pointer-events:none;z-index:9999;user-select:none}
@@ -215,6 +223,7 @@ dialog::backdrop{background:rgba(0,0,0,.55)}
   <div class="top-r">
     <div class="status"><span class="dot loading" id="dot"></span><span id="stText">Загрузка…</span></div>
     <a class="btn" href="manager.html">Моя страница</a>
+    <button class="btn warn" id="planWarn" hidden onclick="openPlansDone()" title="Новые планы видны только на этом компьютере">⚠ Планы не загружены на GitHub</button>
     <button class="btn" onclick="openPlans()">Планы</button>
     <div class="menu-wrap">
       <button class="btn" id="menuBtn" aria-haspopup="true" aria-expanded="false" aria-label="Настройки" onclick="toggleMenu(event)">⋯</button>
@@ -286,15 +295,26 @@ dialog::backdrop{background:rgba(0,0,0,.55)}
     <h2 id="plansTitle">Планы на месяц</h2>
     <p>Валовая прибыль и средний чек в тенге, конверсия в процентах. Пустое поле — план не задан.</p>
   </div>
-  <table class="ptab"><thead><tr><th></th><th>Валовая прибыль</th><th>Конверсия</th><th>Средний чек</th></tr></thead><tbody id="plansBody"></tbody></table>
-  <div class="dlg-f">
-    <button class="btn ghost" onclick="copyPlanUrl(this)">Скопировать ссылку с планами</button>
-    <div><button class="btn ghost" onclick="closePlans()">Отмена</button><button class="btn primary" onclick="savePlans()">Сохранить планы</button></div>
+  <div id="plansForm">
+    <table class="ptab"><thead><tr><th></th><th>Валовая прибыль</th><th>Конверсия</th><th>Средний чек</th><th>Личная страница</th></tr></thead><tbody id="plansBody"></tbody></table>
+    <div class="dlg-f">
+      <span class="dlg-note" id="plansNote"></span>
+      <div><button class="btn ghost" onclick="closePlans()">Отмена</button><button class="btn primary" onclick="savePlans()">Сохранить планы</button></div>
+    </div>
+  </div>
+  <div id="plansDone" hidden>
+    <div class="steps">
+      <div class="step"><b>1</b><div>Файл <code>plans.json</code> скачался в папку «Загрузки».<br><button class="btn ghost lnk" onclick="downloadPlans()">Скачать ещё раз</button></div></div>
+      <div class="step"><b>2</b><div>Загрузите его на GitHub в репозиторий <code>zenith-invest-dash</code>, так же как другие файлы: Add file → Upload files → Commit changes.<br>
+        <span class="muted">Если браузер назвал файл «plans (1).json», переименуйте в plans.json.</span></div></div>
+      <div class="step"><b>3</b><div>Через 1–2 минуты планы появятся на всех экранах и у менеджеров. Рассылать ничего не нужно.</div></div>
+    </div>
+    <div class="dlg-f"><span class="dlg-note">На этом компьютере новые планы уже работают.</span><div><button class="btn primary" onclick="closePlans()">Понятно</button></div></div>
   </div>
 </dialog>
 
-<script src="zenith-core.js?v=7"></script>
-<script src="celebrate.js?v=7"></script>
+<script src="zenith-core.js?v=11"></script>
+<script src="celebrate.js?v=11"></script>
 <script>
 var esc=Z.esc;
 var MONTHS=['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'];
@@ -356,12 +376,15 @@ function openPlans(){
   var plan=getPlan(),pm=plan.mgrs||{},now=new Date();
   document.getElementById('plansTitle').textContent='Планы на '+MONTHS[now.getMonth()];
   function inp(key,val,ph){return '<input type="number" min="0" inputmode="numeric" data-key="'+key+'" value="'+(val||'')+'" placeholder="'+ph+'">';}
-  var rows='<tr class="team"><td>Вся команда</td><td>'+inp('gp',plan.total,'—')+'</td><td>'+inp('conv',plan.planConv,'—')+'</td><td>'+inp('avg',plan.planAvg,'—')+'</td></tr>';
+  var rows='<tr class="team"><td>Вся команда</td><td>'+inp('gp',plan.total,'—')+'</td><td>'+inp('conv',plan.planConv,'—')+'</td><td>'+inp('avg',plan.planAvg,'—')+'</td><td></td></tr>';
   SALES_MGRS.forEach(function(m){
     var name=LAST.users[m.uid]||m.name||('Менеджер '+m.uid);
-    rows+='<tr><td>'+esc(name)+'</td><td>'+inp(m.uid+':gp',pm[m.uid+':gp'],'—')+'</td><td>'+inp(m.uid+':conv',pm[m.uid+':conv'],'—')+'</td><td>'+inp(m.uid+':avg',pm[m.uid+':avg'],'—')+'</td></tr>';
+    rows+='<tr><td>'+esc(name)+'</td><td>'+inp(m.uid+':gp',pm[m.uid+':gp'],'—')+'</td><td>'+inp(m.uid+':conv',pm[m.uid+':conv'],'—')+'</td><td>'+inp(m.uid+':avg',pm[m.uid+':avg'],'—')+'</td>'+
+      '<td><button class="btn ghost lnk" onclick="copyMgrUrl(this,\''+m.uid+'\')" title="Личная страница с планом — отправьте менеджеру">Скопировать ссылку</button></td></tr>';
   });
   document.getElementById('plansBody').innerHTML=rows;
+  document.getElementById('plansNote').textContent=PLANS_STATE.published?'Сейчас у всех действуют планы из plans.json на GitHub.':'Файла plans.json на GitHub пока нет: после сохранения загрузите его.';
+  document.getElementById('plansForm').hidden=false;document.getElementById('plansDone').hidden=true;
   document.getElementById('plansDlg').showModal();
 }
 function closePlans(){document.getElementById('plansDlg').close();}
@@ -373,29 +396,31 @@ function readPlanForm(){
   });
   return plan;
 }
-function savePlans(){
-  try{localStorage.setItem(PLAN_KEY,JSON.stringify(readPlanForm()));}catch(e){}
-  closePlans();run();
+function monthKey(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
+function downloadPlans(){
+  var plan=getPlan(),blob=new Blob([JSON.stringify(normPlan(plan),null,2)],{type:'application/json'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='plans.json';
+  document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},1000);
 }
-// Планы из ссылки (?gp=…&m88gp=…)
-(function(){
-  var params=new URLSearchParams(location.search);if(!params.toString())return;
-  var plan=getPlan();
-  if(params.get('gp'))plan.total=parseFloat(params.get('gp'));
-  if(params.get('conv'))plan.planConv=parseFloat(params.get('conv'));
-  if(params.get('avg'))plan.planAvg=parseFloat(params.get('avg'));
-  if(!plan.mgrs)plan.mgrs={};
-  SALES_MGRS.forEach(function(m){['gp','conv','avg'].forEach(function(f){var v=params.get('m'+m.uid+f);if(v)plan.mgrs[m.uid+':'+f]=parseFloat(v);});});
-  try{localStorage.setItem(PLAN_KEY,JSON.stringify(plan));}catch(e){}
-})();
-function copyPlanUrl(btn){
-  var plan=readPlanForm(),p=new URLSearchParams();
-  if(plan.total)p.set('gp',plan.total);if(plan.planConv)p.set('conv',plan.planConv);if(plan.planAvg)p.set('avg',plan.planAvg);
-  Object.keys(plan.mgrs||{}).forEach(function(k){var s=k.split(':');if(s.length===2&&plan.mgrs[k])p.set('m'+s[0]+s[1],plan.mgrs[k]);});
-  var url=location.origin+location.pathname+'?'+p.toString();
-  navigator.clipboard.writeText(url).then(function(){var t=btn.textContent;btn.textContent='Ссылка скопирована';setTimeout(function(){btn.textContent=t;},2000);})
+function savePlans(){
+  var plan=readPlanForm();plan.month=monthKey();plan=normPlan(plan);
+  try{localStorage.setItem(PLAN_KEY,JSON.stringify(plan));localStorage.setItem(PENDING_KEY,JSON.stringify(plan));}catch(e){}
+  downloadPlans();
+  document.getElementById('plansForm').hidden=true;document.getElementById('plansDone').hidden=false;
+  PLANS_STATE.pending=true;updatePlanWarn();run();
+}
+function openPlansDone(){
+  document.getElementById('plansForm').hidden=true;document.getElementById('plansDone').hidden=false;
+  document.getElementById('plansDlg').showModal();
+}
+function updatePlanWarn(){document.getElementById('planWarn').hidden=!PLANS_STATE.pending;}
+var BASE_URL=location.origin+location.pathname.replace(/[^/]*$/,'');
+function copyText(btn,url){
+  navigator.clipboard.writeText(url).then(function(){var t=btn.textContent;btn.textContent='Скопировано ✓';setTimeout(function(){btn.textContent=t;},2000);})
     .catch(function(){prompt('Скопируйте ссылку:',url);});
 }
+// Постоянная ссылка на личную страницу: планы она берёт из plans.json сама
+function copyMgrUrl(btn,uid){copyText(btn,BASE_URL+'manager.html?mgr='+uid);}
 
 /* ─ празднование ─ */
 function demoCelebrate(){
@@ -407,11 +432,19 @@ function demoCelebrate(){
 }
 
 /* ─ главное ─ */
+var FIRST_RUN=true;
 async function run(){
-  setStatus('loading','Обновление…');
+  if(FIRST_RUN){
+    FIRST_RUN=false;
+    var c=cachedAll();
+    if(c){try{render(c.deals,c.users,c.acts);}catch(e){console.warn(e);}
+      setStatus('loading','Данные от '+new Date(c.at).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})+', обновляем…');}
+    else setStatus('loading','Загрузка…');
+  }else setStatus('loading','Обновление…');
   try{
-    var res=await Promise.all([fetchDeals(),fetchUsers(),fetchActivities()]);
-    render(res[0],res[1],res[2]);
+    var data=await loadAll();
+    render(data.deals,data.users,data.acts);
+    updatePlanWarn();
     document.getElementById('err').style.display='none';
     setStatus('','Обновлено в '+new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}));
   }catch(e){
@@ -470,7 +503,8 @@ function render(deals,users,acts){
   });
 
   var avgM=T.wonM?T.revM/T.wonM:0,avgPS=T.wonPS?T.revPS/T.wonPS:0;
-  var convM=T.crM?T.wcM/T.crM*100:0,convPS=T.crPS?T.wcPS/T.crPS*100:0;
+  // Конверсия = продажи за месяц ÷ новые сделки (квал-лиды) за месяц
+  var convM=T.crM?T.wonM/T.crM*100:0,convPS=T.crPS?T.wonPS/T.crPS*100:0;
   var expected=wd.total?Math.round(wd.passed/wd.total*100):0;
 
   /* ─ главная цифра ─ */
@@ -510,7 +544,7 @@ function render(deals,users,acts){
   document.getElementById('kpis').innerHTML=
     kpi('Выручка','<span class="chip m">'+T.wonM+' '+plural(T.wonM,'оплата','оплаты','оплат')+'</span>',fmt(T.revM)+' ₸',delta(T.revM,T.revPS,prevM))+
     kpi('Средний чек',planChip(avgM,plan.planAvg),fmt(avgM)+' ₸',plan.planAvg?'план '+fmt(plan.planAvg)+' ₸ · '+delta(avgM,avgPS,prevM):delta(avgM,avgPS,prevM))+
-    kpi('Конверсия',planChip(convM,plan.planConv),convM.toFixed(1)+'%',(plan.planConv?'план '+plan.planConv+'% · ':'')+T.wcM+' из '+T.crM+' новых сделок')+
+    kpi('Конверсия',planChip(convM,plan.planConv),convM.toFixed(1)+'%',(plan.planConv?'план '+plan.planConv+'% · ':'')+T.wonM+' '+plural(T.wonM,'продажа','продажи','продаж')+' на '+T.crM+' '+plural(T.crM,'новую сделку','новые сделки','новых сделок'))+
     kpi('В работе','<span class="chip m">'+activeN+' '+plural(activeN,'сделка','сделки','сделок')+'</span>',fmt(activeS)+' ₸','из них счета на '+fmt(inv)+' ₸');
 
   /* ─ команда ─ */
@@ -523,7 +557,7 @@ function render(deals,users,acts){
   var html='<div class="row head"><span></span><span></span><span>Менеджер</span><span>Валовая прибыль за месяц</span><span style="text-align:right">Конверсия</span><span style="text-align:right">Средний чек</span><span style="text-align:right">Сегодня</span></div>';
   arr.forEach(function(m,i){
     var pg=pm[m.uid+':gp']||0,pc=pm[m.uid+':conv']||0,pa=pm[m.uid+':avg']||0;
-    var conv=m.crM?m.wcM/m.crM*100:0,avg=m.wonM?m.revM/m.wonM:0;
+    var conv=m.crM?m.wonM/m.crM*100:0,avg=m.wonM?m.revM/m.wonM:0;
     var p=pg?Math.round(m.gpM/pg*100):0;
     var bar=pg?'<div class="mbar"><i style="width:'+Math.min(100,p)+'%;background:'+(p>=expected?'var(--green)':expected-p<=15?'var(--amber)':'var(--red)')+'"></i><b style="left:'+expected+'%"></b></div>'
               :'<div class="mbar"></div>';
@@ -535,7 +569,7 @@ function render(deals,users,acts){
       '<div class="av" style="background:'+AV_BG[m.i%AV_BG.length]+'">'+(i===0&&m.gpM>0?'<span class="crown">👑</span>':'')+esc(initials(m.name).toUpperCase())+'</div>'+
       '<div style="min-width:0"><div class="nm">'+esc(first(m.name))+'</div><div class="nm-s">'+m.active+' в работе'+(m.stale?' · <span class="down">'+m.stale+' без касания</span>':'')+'</div></div>'+
       '<div><div class="gp-h"><span class="gp-v">'+fmt(m.gpM)+' ₸</span><span class="gp-p">'+(pg?p+'% из '+fmt(pg):'план не задан')+'</span></div>'+bar+'</div>'+
-      '<div class="c" style="color:'+(pc?pctCol(conv/pc*100):'inherit')+'">'+conv.toFixed(0)+'%<small>'+(pc?'план '+pc+'%':'&nbsp;')+'</small></div>'+
+      '<div class="c" style="color:'+(pc&&m.crM?pctCol(conv/pc*100):'inherit')+'" title="'+m.wonM+' '+plural(m.wonM,'продажа','продажи','продаж')+' на '+m.crM+' новых сделок">'+(m.crM?conv.toFixed(0)+'%':'—')+'<small>'+(m.crM?m.wonM+' из '+m.crM+(pc?' · план '+pc+'%':''):'нет новых')+'</small></div>'+
       '<div class="c">'+(avg?fmt(avg):'—')+'<small>'+(m.wonM?m.wonM+' '+plural(m.wonM,'оплата','оплаты','оплат'):'нет оплат')+'</small></div>'+
       '<div class="td">'+(today.length?today.join('<span class="muted">·</span>'):'<span class="muted">пока тихо</span>')+'</div>'+
     '</div>';
