@@ -73,6 +73,16 @@ a{color:inherit;text-decoration:none}
 .hero{grid-column:span 7;padding:1.1rem 1.4rem 1.2rem;position:relative}
 .hero::before{content:"";position:absolute;left:0;top:1.1rem;bottom:1.1rem;width:.3rem;border-radius:0 4px 4px 0;background:var(--red)}
 .hero-l{font-size:.95rem;color:var(--text2)}
+.hero-top{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap}
+.cd{display:flex;align-items:flex-start;gap:.35rem;color:var(--amber)}
+.cd-l{font-size:.82rem;color:var(--text2);margin:.45rem .5rem 0 0}
+.cd-u{display:flex;flex-direction:column;align-items:center;min-width:2.3rem}
+.cd-u b{font-family:Montserrat,sans-serif;font-weight:800;font-size:1.75rem;line-height:1;font-variant-numeric:tabular-nums}
+.cd-u i{font-style:normal;font-size:.68rem;color:var(--text2);margin-top:.2rem}
+.cd-u.sec b{color:var(--text3)}
+.cd-s{font-family:Montserrat,sans-serif;font-weight:800;font-size:1.5rem;line-height:1.1;color:var(--text3)}
+.cd.hot{color:var(--red)}
+.cd.hot .cd-l{color:var(--red);font-weight:600}
 .hero-num{display:flex;align-items:baseline;gap:1rem;flex-wrap:wrap;margin:.2rem 0 .9rem}
 .hero-num .big{font-family:Montserrat,sans-serif;font-weight:900;font-size:4.6rem;line-height:.95;letter-spacing:-.035em;font-variant-numeric:tabular-nums}
 .hero-num .of{font-family:Montserrat,sans-serif;font-weight:700;font-size:1.5rem;color:var(--text2)}
@@ -223,7 +233,16 @@ dialog::backdrop{background:rgba(0,0,0,.55)}
 
 <main class="grid">
   <section class="card hero">
-    <div class="hero-l" id="heroLbl">Валовая прибыль за месяц</div>
+    <div class="hero-top">
+      <div class="hero-l" id="heroLbl">Валовая прибыль за месяц</div>
+      <div class="cd" id="cd" aria-label="До конца месяца">
+        <span class="cd-l">До конца месяца</span>
+        <span class="cd-u"><b id="cdD">00</b><i>дн</i></span><span class="cd-s">:</span>
+        <span class="cd-u"><b id="cdH">00</b><i>ч</i></span><span class="cd-s">:</span>
+        <span class="cd-u"><b id="cdM">00</b><i>мин</i></span><span class="cd-s">:</span>
+        <span class="cd-u sec"><b id="cdS">00</b><i>сек</i></span>
+      </div>
+    </div>
     <div class="hero-num"><span class="big" id="heroFact">—</span><span class="of" id="heroOf"></span><span class="pct" id="heroPct"></span></div>
     <div class="pace" id="pace">
       <div class="pace-track"><div class="pace-fill" id="paceFill"></div><div class="pace-mark" id="paceMark"><span id="paceMarkLbl"></span></div></div>
@@ -299,6 +318,19 @@ function delta(c,p,prevMonth){
 /* ─ часы ─ */
 function tick(){document.getElementById('clock').textContent=new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});}
 tick();setInterval(tick,5000);
+
+/* ─ обратный отсчёт до конца месяца ─ */
+function countdown(){
+  var now=new Date(),end=new Date(now.getFullYear(),now.getMonth()+1,1); // полночь первого числа
+  var t=Math.max(0,end-now),p=function(x){return String(x).padStart(2,'0');};
+  var d=Math.floor(t/864e5),h=Math.floor(t%864e5/36e5),m=Math.floor(t%36e5/6e4),sec=Math.floor(t%6e4/1e3);
+  document.getElementById('cdD').textContent=p(d);document.getElementById('cdH').textContent=p(h);
+  document.getElementById('cdM').textContent=p(m);document.getElementById('cdS').textContent=p(sec);
+  var cd=document.getElementById('cd'),hot=d<3;
+  cd.classList.toggle('hot',hot);
+  cd.querySelector('.cd-l').textContent=d===0?'Последний день месяца':hot?'Финишная прямая':'До конца месяца';
+}
+countdown();setInterval(countdown,1000);
 
 /* ─ меню ─ */
 function toggleMenu(e){
