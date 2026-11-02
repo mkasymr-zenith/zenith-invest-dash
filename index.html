@@ -328,6 +328,9 @@ body.light .mc {
     <button class="tbtn" id="copyPlanBtn" onclick="copyPlanUrl()" style="font-size:11px;padding:5px 10px">🔗 Копировать ссылку</button>
     <button class="tbtn" id="themeBtn" onclick="toggleTheme()">☀</button>
     <button class="tbtn" id="leafBtn" onclick="toggleLeaves()" title="Осенний вайб">🍂</button>
+    <button class="tbtn" id="soundBtn" onclick="toggleSoundBtn()" title="Звук празднования">🔔</button>
+    <button class="tbtn" onclick="demoCelebrate()" title="Показать празднование на последней оплате">🎉</button>
+    <a class="tbtn" href="manager.html" title="Личная страница менеджера" style="text-decoration:none">👤 Моя страница</a>
     <div class="clock" id="clock">00:00:00</div>
   </div>
 </div>
@@ -383,15 +386,9 @@ body.light .mc {
   <span id="footerR">—</span>
 </div>
 
+<script src="zenith-core.js"></script>
+<script src="celebrate.js"></script>
 <script>
-var WH='https://macron.bitrix24.kz/rest/88/ozk5j3nkr24pilf1/';
-var PLAN_KEY='macron_dashboard_plan_v2';
-var STAGE_MAP={'C14:NEW':'Новый клиент','C14:PREPARATION':'Взят в работу','C14:EXECUTING':'КП презентовано','C14:UC_TONIVQ':'КЭВ','C14:FINAL_INVOICE':'КП согласовано','C14:UC_O6LFBY':'Счёт выставлен','C14:WON':'Оплата получена','C14:LOSE':'Условный отказ'};
-var REFUSE_MAP={'332':'Не прошли по цене','334':'Нет в наличии','336':'Срок поставки','338':'Мы отказали','340':'Отмена закупа','342':'Нет документов','344':'Условия оплаты','346':'Качество','348':'Нет товара','350':'Другое','352':'Не отвечает','354':'Уже купили','356':'На прогрев'};
-var ACTIVE=['Новый клиент','Взят в работу','КП презентовано','КЭВ','КП согласовано','Счёт выставлен'];
-var ALL_ST=ACTIVE.concat(['Условный отказ','Оплата получена']);
-var ST_COLOR={'Новый клиент':'#ff9f0a','Взят в работу':'#0a84ff','КП презентовано':'#40c8e0','КЭВ':'#9b76cc','КП согласовано':'#30d158','Счёт выставлен':'#bf5af2','Оплата получена':'#30d158','Условный отказ':'#ff3b30'};
-var AV_BG=['#c0392b','#2471a3','#1e8449','#7d3c98','#b9770e','#148f77'];
 
 /* THEME */
 var isDark=true;
@@ -440,64 +437,6 @@ function fmt(n){n=parseFloat(n)||0;if(n>=1e9)return(n/1e9).toFixed(1)+' млрд
 function initials(s){var p=s.trim().split(' ');return(p[0]?p[0][0]:'')+(p[1]?p[1][0]:'');}
 function pctCol(p){return p>=80?'var(--green)':p>=50?'var(--amber)':'var(--red)';}
 function delta(c,p){if(!p||!c)return '';var d=((c-p)/p*100).toFixed(0);return '<span class="'+(d>=0?'up':'down')+'">'+(d>=0?'▲ +':'▼ ')+d+'%</span>';}
-
-/* FETCH */
-async function fetchDeals(){
-  var all=[],start=0,total=null;
-  while(true){
-    var b=new URLSearchParams();
-    b.append('FILTER[CATEGORY_ID]','14');
-    ['ID','TITLE','STAGE_ID','OPPORTUNITY','ASSIGNED_BY_ID','COMMENTS',
-     'UF_CRM_1703075382408','UF_CRM_1705997334698','UF_CRM_1781668890853',
-     'DATE_CREATE','CLOSEDATE','LAST_COMMUNICATION_TIME','DATE_MODIFY'].forEach(function(f){b.append('SELECT[]',f);});
-    b.append('ORDER[ID]','DESC');
-    b.append('start',String(start));
-    var r=await fetch(WH+'crm.deal.list.json',{method:'POST',body:b});
-    var d=await r.json();
-    if(d.error)throw new Error(d.error_description||d.error);
-    all=all.concat(d.result||[]);
-    if(total===null)total=d.total||0;
-    if(!d.next||all.length>=total)break;
-    start=d.next;
-  }
-  return all;
-}
-async function fetchUsers(){
-  var r=await fetch(WH+'user.get.json',{method:'POST',body:new URLSearchParams({'FILTER[ACTIVE]':'Y'})});
-  var d=await r.json();var m={};
-  (d.result||[]).forEach(function(u){m[u.ID]=((u.NAME||'')+' '+(u.LAST_NAME||'')).trim();});
-  return m;
-}
-
-async function fetchActivities(){
-  // Берём только звонки (TYPE_ID=2) за последние 14 дней
-  var cutoff=new Date();
-  cutoff.setDate(cutoff.getDate()-14);
-  var dd=String(cutoff.getDate()).padStart(2,'0');
-  var mm=String(cutoff.getMonth()+1).padStart(2,'0');
-  var yyyy=cutoff.getFullYear();
-  var cutoffStr=dd+'.'+mm+'.'+yyyy;
-  var all=[], start=0;
-  try {
-    while(all.length<3000){
-      var b=new URLSearchParams();
-      b.append('FILTER[TYPE_ID]','2');        // только звонки
-      b.append('FILTER[>=CREATED]',cutoffStr);
-      b.append('select[]','ID');
-      b.append('select[]','CREATED');
-      b.append('select[]','AUTHOR_ID');
-      b.append('start',String(start));
-      var r=await fetch(WH+'crm.activity.list.json',{method:'POST',body:b});
-      var d=await r.json();
-      if(d.error||!d.result) break;
-      var items=Array.isArray(d.result)?d.result:[];
-      all=all.concat(items);
-      if(!d.next||all.length>=(d.total||0)) break;
-      start=d.next;
-    }
-  } catch(e){ console.warn('calls fetch failed',e); }
-  return all;
-}
 
 function savePlan(el){
   var key=el.dataset.key,val=parseFloat(el.value)||0;
@@ -694,7 +633,7 @@ async function run(){
             if(mgrName!=='Не назначен'&&mgrData[mgrName]){mgrData[mgrName].revM+=opp;mgrData[mgrName].gpM+=gpv;mgrData[mgrName].wonM++;mgrData[mgrName].avgChkM+=opp;mgrData[mgrName].avgChkMN++;}
             if(payD>=todayStart){revDay=(revDay||0)+opp;gpDay=(gpDay||0)+gpv;
               if(mgrName!=='Не назначен'&&mgrData[mgrName]){mgrData[mgrName].revDay+=opp;mgrData[mgrName].gpDay+=gpv;mgrData[mgrName].wonDay++;}}
-            recentPaid.push({title:d.TITLE||'(без названия)',amt:opp,gp:gpv,mgr:mgrName,date:payD});
+            recentPaid.push({id:d.ID,uid:d.ASSIGNED_BY_ID,title:d.TITLE||'(без названия)',amt:opp,gp:gpv,mgr:mgrName,date:payD});
           }
           if(payD>=pmStart&&payD<=pmEnd){
             revP+=opp;gpP+=gpv;avgChkP+=opp;avgChkPN++;
@@ -866,6 +805,11 @@ async function run(){
       }).join(''):'<div style="font-size:11px;color:var(--text2);padding:8px 0">Оплат в этом месяце нет</div>')+
     '</div>';
 
+    /* 🎉 ПРАЗДНОВАНИЕ НОВЫХ ОПЛАТ */
+    lastCelebrateCtx={planGp:plan.total||0,gpM:gpM,avgM:avgM,wonM:wonM};
+    lastPaid=recentPaid;
+    Celebrate.check(recentPaid,lastCelebrateCtx,{storageKey:'zi_seen_paid_tv'});
+
     /* HEATMAP */
     var mgrUserIds=SALES_MGR_IDS;
     var heatHtml=buildHeatmap(activities, mgrUserIds);
@@ -974,6 +918,15 @@ async function run(){
     document.getElementById('dot').className='dot error';
     document.getElementById('stText').textContent='Ошибка: '+e.message;
   }
+}
+
+/* 🎉 кнопки празднования */
+var lastCelebrateCtx={},lastPaid=[];
+function toggleSoundBtn(){var on=Celebrate.toggleSound();document.getElementById('soundBtn').textContent=on?'🔔':'🔕';}
+(function(){var b=document.getElementById('soundBtn');if(b)b.textContent=Celebrate.soundOn()?'🔔':'🔕';})();
+function demoCelebrate(){
+  var p=lastPaid[0]||{id:'demo',title:'Тестовая сделка',amt:1850000,gp:310000,mgr:'Команда ZENITH',date:new Date()};
+  Celebrate.demo(p,lastCelebrateCtx);
 }
 
 /* MOOD */
