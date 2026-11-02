@@ -201,8 +201,8 @@ button,select{font:inherit;color:inherit}
   </div>
 </main>
 
-<script src="zenith-core.js?v=11"></script>
-<script src="celebrate.js?v=11"></script>
+<script src="zenith-core.js?v=12"></script>
+<script src="celebrate.js?v=12"></script>
 <script>
 var esc=Z.esc;
 function fmt(n){n=parseFloat(n)||0;var a=Math.abs(n);if(a>=1e9)return(n/1e9).toFixed(1)+' млрд';if(a>=1e6)return(n/1e6).toFixed(1)+' млн';if(a>=1e3)return Math.round(n/1e3)+' тыс';return String(Math.round(n));}
@@ -231,7 +231,19 @@ function pickMgr(uid){
 }
 
 var DATA=null;
+
+/* Проверка, что все файлы на GitHub одной версии */
+var NEED_VERSION=12;
+function versionProblem(){
+  var bad=[];
+  if(typeof ZENITH_CORE_VERSION==='undefined'||ZENITH_CORE_VERSION<NEED_VERSION)bad.push('zenith-core.js');
+  if(typeof CELEBRATE_VERSION==='undefined'||CELEBRATE_VERSION<NEED_VERSION)bad.push('celebrate.js');
+  return bad.length?'На GitHub устарел '+(bad.length>1?'файлы ':'файл ')+bad.join(' и ')+'. Залейте '+(bad.length>1?'их':'его')+' заново (Add file → Upload files), подождите 1–2 минуты и нажмите Ctrl+Shift+R.':'';
+}
 async function load(){
+  var vp=versionProblem();
+  if(vp){document.getElementById('dot').className='dot error';document.getElementById('stText').textContent='Нужно обновить файл';
+    var er=document.getElementById('err');er.style.display='block';er.textContent=vp;return;}
   var dot=document.getElementById('dot'),st=document.getElementById('stText');
   dot.className='dot loading';st.textContent='Обновление…';
   if(!DATA){

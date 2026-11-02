@@ -253,6 +253,7 @@
   function soundOn(){try{return localStorage.getItem('zi_sound')!=='off';}catch(e){return true;}}
 
   /* ─ публичное API ─ */
+  window.CELEBRATE_VERSION=12;
   window.Celebrate={
     check:function(items,ctx,opts){
       opts=opts||{};var key=opts.storageKey||'zi_seen_paid',seen=null;
