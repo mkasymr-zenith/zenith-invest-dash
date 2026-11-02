@@ -200,8 +200,8 @@ button,select{font:inherit;color:inherit}
   </div>
 </main>
 
-<script src="zenith-core.js"></script>
-<script src="celebrate.js"></script>
+<script src="zenith-core.js?v=3"></script>
+<script src="celebrate.js?v=3"></script>
 <script>
 var esc=Z.esc;
 function fmt(n){n=parseFloat(n)||0;var a=Math.abs(n);if(a>=1e9)return(n/1e9).toFixed(1)+' млрд';if(a>=1e6)return(n/1e6).toFixed(1)+' млн';if(a>=1e3)return Math.round(n/1e3)+' тыс';return String(Math.round(n));}
@@ -336,7 +336,7 @@ function render(){
     fill.style.background=pct>=100?'var(--green)':ahead?'var(--green)':expected-pct<=15?'var(--amber)':'var(--red)';
     document.getElementById('paceMark').style.left=expected+'%';
     document.getElementById('paceL').innerHTML='Выполнено <b>'+pct+'%</b> · '+fmt(my.gpM)+' из '+fmt(planGp)+' ₸';
-    document.getElementById('paceR').innerHTML=pct>=100?'':ahead?'<span class="up">Опережаете график на '+(pct-expected)+' п.п.</span>':'По графику к сегодняшнему дню нужно <b>'+expected+'%</b>';
+    document.getElementById('paceR').innerHTML=pct>=100?'':wd.passed===0?'Первый рабочий день месяца, стартуем 🚀':pct===expected?'Идёте точно по графику':ahead?'<span class="up">Опережаете график на '+(pct-expected)+' п.п.</span>':'По графику к сегодняшнему дню нужно <b>'+expected+'%</b>';
   }else{
     big.innerHTML=esc(fmt(my.gpM))+'<small>₸</small>';
     sub.innerHTML='Валовая прибыль за '+monthName+'. Личный план пока не задан: его ставит руководитель на общем экране, и тогда здесь появится сумма, которую нужно приносить в день.';
